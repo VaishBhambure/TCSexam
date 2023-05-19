@@ -1,0 +1,415 @@
+Assignment 1:
+
+Title: Job Position and Trends Analysis
+
+1) Create a directory on HDFS with the name 'Analysis'.
+ step 1: To configure docker
+
+ /home/user34/Desktop/BigData$ sudo docker -compose up
+
+ step 2: Now we need to enter into hadoop cluster using command
+
+ /home/user34/Desktop/BigData$ sudo docker exec -it namenode bash
+
+ step 3: Now we can create directory 'Analysis' in HDFS
+  
+  root@573d8339fa78:/# hdfs dfs -mkdir/Analysis
+
+ step 4: Display list of directories and check whether 'Analysis' created or not 
+  
+  root@573d8339fa78:/# hdfs dfs -ls /
+
+ 2) Load the dataset to the directory as above using HDFS commands.
+  step 1: we use hive to load dataset for that we must start hive
+
+  /home/user34/Desktop/BigData$ sudo docker exec -it hive-server bash
+
+  step 2: Now go to the path where dataset is and perform command to display it in local system
+
+  /home/user34/Desktop/Assignment1$ docker container ls
+
+  /home/user34/Desktop/Assignment1$ sudo docker cp ./listings2019_2022.csv a0a9d611810b:/listings2019_2022.csv
+
+  step 3: Now go to root node and check whether dataset is present or not
+
+   root@a0a9d611810b:/# ls
+
+  step 4: Copy dataset to 'Analysis' directory
+
+   root@a0a9d611810b:/# hdfs dfs -copyFromLocal /listings2019_2022.csv /Analysis/
+
+  step 5: To check whether dataset copied to directory
+
+   root@a0a9d611810b:/# hdfs dfs -ls /Analysis
+
+ 3) Analyze the fields/columns in the .csv file and create tables in HIVE appropriately as required for analysis.
+
+  step 1: Firstly enter into hive command
+
+   /home/user34/Desktop/BigData$ sudo docker exec -it hive-server bash
+
+   root@a0a9d611810b:/opt# hive
+
+  step 2: Create table (job) with necessary fields for analysis
+
+   hive> CREATE TABLE IF NOT EXISTS JOB(jobId STRING,jobClassification STRING,jobTitle STRING,listingDate TIMESTAMP,expiryDate TIMESTAMP,R INT,Python INT,Matlab INT,SQL INT,Stata INT,Minitab INT,SPSS INT,Ruby INT,C INT,Scala INT,Tableau INT,Java INT,Hadoop INT,SAS INT,Julia INT,Knime INT,D3 INT,Clojure INT,Haskell INT,Lisp INT,Golang INT,Spark INT,Javascript INT,F INT,Fortran STRING,recruiter INT, year INT, CompanyName STRING)COMMENT 'JOB INFO' ROW FORMAT DELIMITED FIELDS TERMINATED BY "," STORED AS TEXTFILE;
+
+ 
+  step 3: To show the tables whether table created or not
+
+    hive> show tables;
+
+  step 4: To describe the table and its datatypes
+
+    hive> describe job;
+
+4) Load the dataset from HDFS to HIVE tables created.
+  step 1: Load file from hdfs to hive use command
+
+   hive> load data inpath '/Analysis/listings2019_2022.csv' overwrite into table job;
+
+  step 2: To display number of records in dataste
+
+   hive> select count(*) from job;
+
+5) Use Select query to test the data in Hive tables and perform JOIN operations to extract relevant information related to:
+   a) Year wise count of technologies being recruited.
+   b) Companies recruiting the most year-wise.
+   c) Top 5 JobTitles being recruited year-wise.
+
+ a) Year wise count of technologies being recruited.
+
+  Query 1:
+   hive> select year,count(jobClassification),recruiter from job group by year,recruiter;
+
+   in above query, output 0 stands for not recruited and 1 stands for recruited
+
+ b) Companies recruiting the most year-wise.
+
+  Query 2:
+  hive> select companyName,year, count(recruiter) as cnt from job  where recruiter=1 group by CompanyName,year sort by cnt desc limit 10;
+   
+  above query displays top 10 records of companies with highest recruitment by year
+
+ c) Top 5 JobTitles being recruited year-wise.
+
+  Query 3: 
+  hive> select year,jobTitle,count(recruiter) as cnt  from job  where recruiter=1 and year=2022 group by year,jobTitle,recruiter order by year desc limit 5 ;
+
+  above query will display the top 5 job titles for year 2022 that is how we can change year and get data about particular year
+
+6) Develop a HIVE JDBC program using HiveServer2 to connect to HIVE tables created and perform the following operations:
+    a) Develop a CLI based interface for any ad-hoc query resolution, where users can type HIVE SQL queries and it would display the output.
+    b) Make provision for insertion of data from user console.
+    c) Update and correct data in HIVE table(s) based on user interaction.
+
+  step 1: Enter into beeline
+    
+    root@c24098fba847:/# beeline
+
+  step 2: developing hive jdbc program into hiveserver2
+     
+    beeline> !connect jdbc:hive2://localhost:10000
+
+  step 3: Now we are into local host 10000, perform command to display whether table present or not
+
+    0: jdbc:hive2://localhost:10000> show tables;
+    
+    here we can see job table is present
+
+a) Develop a CLI based interface for any ad-hoc query resolution, where users can type HIVE SQL queries and it would display the output.
+
+    From step 3 we got 
+
+    0: jdbc:hive2://localhost:10000> 
+
+    so we can perform hive queries on beeline,
+  
+    Query 1:
+    0: jdbc:hive2://localhost:10000> select year,jobTitle,count(recruiter) as cnt  from job  where recruiter=1 and year=2022 group by year,jobTitle,recruiter order by year desc limit 5 ;
+    
+    In above query we performed same query which we performed in hive to display top 5 job titles for year 2022
+
+b) Make provision for insertion of data from user console.
+
+   Query 2:
+   0: jdbc:hive2://localhost:10000> INSERT INTO  job VALUES(55701106,"Information & Communication Technology","data scientist",16-01-2019,26-08-2019,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2020,"TCS");
+
+c) Update and correct data in HIVE table(s) based on user interaction.
+ 
+   Query 3:
+   update job set jobtitle='AI Resercher' where jobClassification=Science & Technology;
+
+
+
+or we can perform it using java but for that we need to install java environment in vm
+
+Code:
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+public class HiveJdbcExample {
+    /**
+      * HiveServer2 JDBC driver name
+      */
+    private static String driverName = "org.apache.hive.jdbc.HiveDriver";
+    public static void main(String[] args) throws SQLException {
+         try {
+             Class.forName(driverName);
+         } catch (ClassNotFoundException e) {
+             e.printStackTrace();
+             System.exit(1);
+         }
+        Connection conn = DriverManager.getConnection("jdbc:hive2://localhost:10000", "hive", "");
+         Statement stmt = conn.createStatement();
+         // show tables
+         String sql = "SHOW databases";
+         System.out.println("Running: " + sql);
+         ResultSet rs = stmt.executeQuery(sql);
+         while (rs.next()) {
+             System.out.println(rs.getString(1));
+         }
+         rs.close();
+        String sql2= "select * from job";
+         System.out.println("Running: " + sql2);
+         ResultSet rs = stmt.executeQuery(sql2);
+        ResultSetMetaData rsmd = rs2.getMetaData();
+         int columnsNumber = rsmd.getColumnCount();
+         while (rs2.next()) {
+             for (int i = 1; i <= columnsNumber; i++) {
+                 if (i > 1)
+                     System.out.print(",  ");
+                 String columnValue = rs2.getString(i);
+                 System.out.print(rsmd.getColumnName(i) + " " + columnValue);
+             }
+             System.out.println("all records fetched");
+         }
+        rs3.close();
+         String sql3 = "INSERT INTO (jobid, jobtitle, companyname) job VALUES (55701106, "data scientist", capjemini) ";
+         System.out.println("Running: " + sql3);
+         ResultSet rs3= stmt.executeQuery(sql3);
+         System.out.println("Record updated sucessfully");
+        rs3.close();
+
+        String sql4 = "update job set jobtitle='Credit risk analyst' where year=2019 ";
+         System.out.println("Running: " + sql4);
+         ResultSet rs4= stmt.executeQuery(sql4);
+         System.out.println("Record updated sucessfully");
+        rs4.close();
+        conn.close();
+     }
+  }
+
+7) Integrate Kafka to ingest data from local system and load to HDFS.
+ 
+ For integrating Kafka to ingest data from local system to hdfs system we perfrom command
+
+ 
+ /home/user34/Desktop/BigData$ sudo docker-compose up
+
+ Command will configure the docker and integrate kafka so that we can load data
+ 
+ 
+ 
+ 
+ ASsigment2
+ Title: Master data management
+
+
+1)	Create a directory on HDFS with the name 'PublishingHouse'.
+
+
+step 1: To configure docker
+
+
+/home/user34/Desktop/BigData$ sudo docker-compose up
+
+
+step 2: Now we need to enter into hadoop cluster using command
+
+
+/home/user34/Desktop/BigData$ sudo docker exec -it namenode bash
+
+
+step 3: Now we can create directory 'PublishingHouse' in HDFS
+
+
+root@573d8339fa78:/# hdfs dfs -mkdir/PublishingHouse
+
+
+step 4: Display list of directories and check whether 'PublishingHouse' created or not
+
+
+root@573d8339fa78:/# hdfs dfs -ls /
+
+
+ 
+ 
+2)	Load the dataset to the directory created using HDFS commands.
+
+
+step 1: Now go to the path where dataset is and perform command to display it in local system
+
+
+/home/user34/Desktop/Assignment2$ docker container ls
+
+
+/home/user34/Desktop/Assignment2$ sudo docker cp
+./BooksPublishing_data.csv a0a9d611810b:/BooksPublishing_data.csv
+ 
+
+
+
+
+step 2: Now go to root node and check whether dataset is present or not
+
+
+root@a0a9d611810b:/# ls
+
+
+step 4: Copy dataset to 'PublishingHouse' directory
+
+
+root@a0a9d611810b:/# hdfs dfs -copyFromLocal /BooksPublishing_data.csv
+/PublishingHouse/
+
+
+step 5: To check whether dataset copied to directory
+
+
+root@a0a9d611810b:/# hdfs dfs -ls /PublishingHouse
+
+  
+
+
+
+
+3)	Use PySpark programming to load data from HDFS and create a dataframe to analyze the fields/columns for analysis by displaying all fields.
+
+
+step 1: To start with spark
+
+
+ubuntu@ip-172-31-25-38:/home/user34/Desktop/BigData$ sudo docker exec
+-it spark-master bash
+
+
+step 2: Now in bash type code to load data from hdfs and create dataframe
+
+
+bash-4.4# vi first1.py
+
+
+Program:
+
+
+from pyspark import SparkContext,SparkConf from pyspark.conf import SparkConf
+from pyspark.sql import SparkSession
+ss=SparkSession.builder.appName("test1").getOrCreate() from pyspark.sql.functions import col
+ 
+ss.sparkContext.setLogLevel("ERROR")
+
+df=ss.read.csv("hdfs://namenode:8020/PublishingHouse/BooksPublishing_dat a.csv",inferSchema=True,sep='\t',header=True)
+df.show(10) df.printSchema() print("\nThe cols are:") print(df.columns)
+
+Here dataframe df is created and fields in dataframe are displayed along with top 10 rows of dataframe and schema of dataframe
+
+
+
+ 
+step 3: To display output use command
+
+
+bash-4.4# ./spark/bin/spark-submit first1.py
+
+
+
+
+4)	Use Select query to extract relevant information related for analysis:
+a)	Count and display publisher name wise contents developed.
+ 
+b)	Count and display Author wise contents developed.
+c)	Find Top 5 Books as per its volumes (No. Of Pages).
+d)	Find highest no. of contents published by an author. e)Partition by contents developed and save the table.
+
+a)	Count and display publisher name wise contents developed.
+
+
+Import necessary packages to perform sql select queries,
+
+
+from pyspark.sql.functions import col,asc,desc,sum
+
+
+Query 1:
+
+
+df.select(col("logDate"),col("pub"),col("sid")).show()
+
+df.groupby("pub").count().show()
+ 
+ 
+
+
+b)	Count and display Author wise contents developed.
+
+
+Query 2:
+
+
+df.groupBy("aufirst").count().show()
+
+
+c)	Find Top 5 Books as per its volumes (No. Of Pages).
+
+
+Query 3:
+
+
+
+df.groupby("btitle").agg(sum("volume").alias("volume")).sort(desc("volume"
+)).show(5)
+ 
+ 
+
+
+d)	Find highest no. of contents published by an author.
+
+
+Query 4:
+
+
+df.groupBy("aufirst").count().show(2)
+
+
+
+e)	Partition by contents developed and save the table.
+
+
+Query 5:
+
+
+Write the below command to save
+Part_df = df.write.partitionBy(“genre”)
+Part_df.format(“CSV”).save(“hdfs://namenode:8020/sparkdfs”)
+ 
+ 
+
+
+
+Q.5) Develop a CLI based interface for any ad-hoc query resolution, where users can type Spark-SQL queries and it would display the output.
+
+
+We will create a file “sparkcli.py” to write the code using the command
+vi sparkcli.py
+
+
+
+ 
+We execute the file using the command
+
+The output generated should be count as shown below
