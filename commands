@@ -406,10 +406,60 @@ Q.5) Develop a CLI based interface for any ad-hoc query resolution, where users 
 
 We will create a file “sparkcli.py” to write the code using the command
 vi sparkcli.py
+code:
+import argparse
 
+from pyspark.sql import SparkSession
+
+parser = argparse. ArgumentParser (description='Retrive data from a spark df') parser.add_argument('--query', help='The SQL query to execute')
+
+args = parser.parse_args()
+
+spark= SparkSession.builder.appName("SparkCLI").getOrCreate()
+
+path = "hdfs://namenode: 8020/PublishingHouse/Books Publishing_data.csv"
+
+df = spark.read.format("csv").option("header", "true").option("delimiter", "\t")
+
+df.createOrReplace TempView("books")
+
+result = spark.sql(args.query)
+
+result.show()
+
+./spark/bin/spark-submit sparkcli.py --query "select count(*)from books"
 
 
  
 We execute the file using the command
 
 The output generated should be count as shown below
+
+
+pYSPARK code
+from pyspark import SparkContext,SparkConf
+ from pyspark.conf import SparkConf
+ from pyspark.sql import SparkSession
+ ss=SparkSession.builder.appName("test1").getOrCreate()
+ from pyspark.sql.functions import col
+ ss.sparkContext.setLogLevel("ERROR")
+ 
+df=ss.read.csv("hdfs://namenode:8020/PublishingHouse/BooksPublishing_dat
+a.csv",inferSchema=True,sep='\t',header=True)
+ df.show(10) 
+ df.printSchema() 
+ print("\nThe cols are:")
+ print(df.columns)
+ 
+ 2.
+ from pyspark import SparkContext from pyspark import SparkConf cont = SparkConf().setAppName("Test")
+
+sc SparkContext(conf-conf)
+
+sc.setLogLevel("ERROR")
+
+lines sc. textFile("hdfs://namenode:8020/DR/Emp.txt")
+
+Lines Lines.collect() print("Displaying Employee Details from HDFS:
+
+for line in Lines: print(line)
